@@ -1,0 +1,156 @@
+---
+title: "Assignment 2"
+author: "Eric D'Souza"
+date: "February 4th,2020"
+output:
+html_document: default
+---
+**Loading required libraries**
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+```{r}
+library(fpp2)
+library(knitr)
+```
+
+<span style="color:blue">**Loading required library for "PAYSNA" dataset**</span>
+```{r}
+library(quantmod)
+symbols <- c("PAYNSA")
+m = length(symbols)
+getSymbols (symbols,src="FRED")
+```
+
+```{r}
+#converting to dataframe
+df_n = ts(PAYNSA, start=1939, frequency=12)
+p = df_n[,"PAYNSA"]
+
+#Made an adhjustment for Question c) to add continiutiy for the forecast
+timeperiod <- window(p,start=c(2010,1))
+
+#Using only required dataset
+z = window(p,start=c(2010, 1),end=c(2017, 12))
+View(z)
+```
+
+<span style="color:red">*Please note for above. The error is displayed on the HTML format becuase of a certain package. The table is other wise viewable in rstudio.</span>
+
+**Part A**
+```{r}
+TS_P <- tslm(z ~ trend+season)
+summary(TS_P)
+
+autoplot(z, series = "Data") +
+  autolayer(fitted(TS_P), series = "Fitted") +
+  ylab("PAYNSA (thousands of persons)") + ggtitle("US Total Non-farm Payroll")
+
+```
+
+<span style="color:blue">**Scatterplot representation of data points for the actual values and the fitted values for PAYNSA**</span>
+```{r}
+cbind(Data = z,
+      Fitted = fitted(TS_P)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Data, y=Fitted)) +
+    geom_point() +
+    ylab("Fitted (predicted values)") +
+    xlab("Data (actual values)") +
+    ggtitle("US Total Non-farm Payroll") +
+    geom_abline(intercept=0, slope=1)
+```
+
+<span style="color:blue">**Checking Residuals and analysis for the same**</span>
+```{r}
+checkresiduals(TS_P)
+```
+
+In order to determine how well the model fits, I first created a time series plot with the fitted values layered over the actual data provided by the dataset. Based of the plotted graph, it is clear that the model fits relatively well, but is seemingly being impacted by some discrepancy from 2010, and 2013-2014.
+
+For the scatterplot, I would say most of the data is near the regression line, indicating that the fitted data has accurately captured the actual data. Several points are being noticed as an anomaly near the left tail end and the middle which is a reflection of what was described in the time series graph.
+
+Finally, using the summary() function, we can see that the R^2 value is 99%, which indicates a very good fit as the value is close to 1. P-value is equal to 0.00000000000000022, which is statsistically significant.
+
+For the residual analysis. The time series plot resmebles the scatterplot information above. Which is in line with the analyssi i had made for the scatterplot graph. The ACF plot has a downward trend, which is indicated by the constant decrease with the increase in lag.There is not storng seasonal factor for the same. Finally, the histogram is slightly skewed to the right, with an anomaly aorund the 250 residual mark.
+
+
+<span style="color:green">----------END OF QUESITON A--------------------</span>
+
+<span style="color:blue">**------------START OF QUESTION B-------------------**</span>
+
+```{r}
+#I have used a for loop to avoid repetition of  inserting multiple lines of code
+for (h in 1:6) {
+  fourier_P = tslm(z ~ trend + fourier(z, K = h))
+  print(CV(fourier_P))
+}
+```
+
+For the above lines of code, we have set a harmonic regressions. The highest possible fourier term is 6 based off of the formula, K=M/2 (M is the number of seasonal periods), we have 12 seasonal periods, therefore the highest K value that could be tested and run was 6. I ran a for loop through the code, to avoid the clutter.
+After analysis, K6 had the lowest AIC and CV scores.
+
+```{r}
+#Runnning the harmonic regression, 6 variables have proved to have the lowest CV values. The appropriate number of fourier terms for our case is 6
+fourier_PA = tslm(z ~ trend + fourier(z, K = 6))
+
+cbind(Data = z,
+      Fitted = fitted(fourier_PA)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Data, y=Fitted)) +
+    geom_point() +
+    ylab("Fitted (predicted values)") +
+    xlab("Data (actual values)") +
+    ggtitle("US Total Non-farm Payroll") +
+    geom_abline(intercept=0, slope=1)
+```
+
+```{r}
+summary(fourier_PA)
+```
+
+Running the harmonic regression 6-K values , K=6 had the lowest AIC and CV scores, and thus we conducted the rest of the analysis with fourier.When comparing our linear model (TSLM) and harmonic model, the results and data appear to fit the same with resmebling anomalies of data points being off the left tail end and the middle.After running the summary function, I noted that there was the same multiple r-squared and p-value. I can conclude that there is no difference between the TSLM and Harmonic model in this section. I expected a slight chnage if anything with the harmoninc model considering the added varibales. But, as the texbook indiciated, the increase in varibales doesnt necassirly change R^2 value.
+
+```{r}
+checkresiduals(fourier_PA)
+```
+
+I should not be too surprised by the the outcome of the checkresiduals function,the above- Time plot, ACF graph and the residual graph appear to be the same, as the TSLM residuals. 
+The values of R^2 and p-value are the same with a slight change in percentage numbers.Hence shape and trend factors resemble both in the TSLM and harmonic regression analysis.
+
+<span style="color:green">---------------End of Question B----------------------</span>
+
+<span style="color:blue">**----------------START OF QUESTION C----------------------**</span>
+```{r}
+#Forecast for PAYNSA series for each each mehtod and the choosen variables
+fc_1 = forecast(TS_P, h=24)
+autoplot(fc_1)
+
+fc_2 = forecast(fourier_PA, newdata = data.frame(fourier(z, 6, 24)))
+autoplot(fc_2)
+```
+
+```{r}
+accuracy(fc_1)
+```
+
+```{r}
+accuracy(fc_2)
+```
+
+Using the accuracy function, which examines the errors of each fit, we can determine which model fits best by identifying the one with the largest number of lowest values. In this case, the harmonic regression model appears to fit best, as it has the lower value in every test with the exception of RMSE.
+fc_1 is the linear model, and fc_2 is the Harmonic model. The RMSE, MAE, MPE and MAPE have the exact same values. This is consistent with the above analysis from prior questions. The value that is noteably different is the ME. The linear model has a lower ME, whihc does indincate a better model.
+
+```{r}
+autoplot(timeperiod) +
+  ylab("US Nonfarm Payroll (In Thousands of Persons)") +
+  xlab("Year") +
+  ggtitle("Predictions for US Nonfarm Payroll") +
+  autolayer(fc_1, PI = FALSE, series = "Linear Trend Model") +
+  autolayer(fc_2, PI = FALSE, series = "Harmonic Regression Model") +
+  guides(colour = guide_legend(title = "Forecast Type"))
+```
+
+Plotting both forecasts onto the actual data(extended to 2020), we can see that both do a pretty good job of mimcking the trend and seaonality of said actual dataset. 
+From the graph, it is evident that the linear trend and harmonic regression models produce an  identical set of forecasts for 2017-2020. Delving deeper, we can observe that both models do relatively well at forecasting the actual US nonfarm payroll. The peaks have been observed at 150000,145000, 152000, and 157000. The forecasted peak form 2018 to almost 2019 has a higher posiitve delta relative to the historic data in the graph. 
