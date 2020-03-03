@@ -1,0 +1,441 @@
+#This is the raw code. Kindly view final output here
+View Output: file:///Users/Eric/Desktop/r/Assignment_3.html
+
+---
+title: "Assignment 3"
+author: "Eric D'Souza"
+date: "March 2nd,2020"
+output:
+html_document: default
+---
+**Loading required libraries**
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+```{r}
+library(fpp2)
+library(knitr)
+library(grid)
+```
+
+<span style="color:blue">**Loading required file (Boeing sales) for training and testing**</span>
+```{r}
+bo_rev <- read.csv("~/desktop/r/Boeingdata.csv")
+View(bo_rev)
+
+df = bo_rev
+df = ts(df, start=2000, frequency=4)
+View(df)
+b = df[,"SALES_REV_TURN"]
+```
+
+<span style="color:blue">**Training and testing data based on goven parameters of 80-20 split**</span>
+```{r}
+train <- window(b, start=c(2000,1), end=c(2015,4))
+test <- window(b, start=c(2016,1), end=c(2019,3))
+h=length(test)
+```
+
+**Question 1**
+
+<span style="color:blue">**Applying each model to the traininig set**</span>
+We are doing the following steps to compare the forecast accuracy for each of the respective methods.
+
+<span style="color:green">**TSLM**</span>
+```{r}
+fit.tslm <- tslm(train ~ trend + season)
+fcast1 <- forecast(fit.tslm, h=h)
+```
+
+<span style="color:green">**ETS**</span>
+```{r}
+fit.ets <- ets(train, model="ZZZ")
+fcast2 <- forecast(fit.ets, h=h)
+```
+
+<span style="color:green">**STL**</span>
+```{r}
+fit.stl <- stl(train, t.window=15, s.window="periodic", robust=TRUE)
+fcast3 <- forecast(fit.stl, method="rwdrift", h=h)
+```
+
+<span style="color:green">**ARIMA**</span>
+```{r}
+fit.arima <- auto.arima(train)
+fcast4 <- forecast(fit.arima, h=h)
+```
+
+<span style="color:green">**Random walk with drift**</span>
+```{r}
+fcast5 <- rwf(train, h=h, drift=TRUE)
+```
+
+<span style="color:blue">**We have now generated several forecasts using each of the five models (TSLM, ETS, STL, ARIMA, and Random Walk with Drift), we must now compare the accuracy of the forecasts.Accuracy measures for each of the models will now be calculated and values with the lowest respective  values (Most importantly the "MAPE" value) would be considered the best fit for the model.**</span>
+```{r}
+a1 = accuracy(fcast1, test)
+a2 = accuracy(fcast2, test)
+a3 = accuracy(fcast3, test)
+a4 = accuracy(fcast4, test)
+a5 = accuracy(fcast5, test)
+
+a.table<-rbind(a1, a2, a3, a4, a5)
+
+row.names(a.table)<-c('TSLM training', 'TSLM test', 'ETS training', 'ETS test','STL training', 'STL test', 'ARIMA training', 'ARIMA test', 'RWD training', 'RWD test')
+
+a.table<-as.data.frame(a.table)
+a.table<-a.table[order(a.table$MASE),]
+a.table
+```
+
+<font size="4"> **Overall analysis for Q1**</font> 
+
+Based on the table of accuracy measures presented above; using the test set it is evident that the TSLM method is able to genrate the best values. This is made sure as TSLM values are the lowest in the MAPE,ME,and MPE respetively.
+The next best results are genrated by the STL test using the same methods. However, relative to all of thes mehtids after close analysis, I was to confirm that the ARIMA test has the worst fitting model. The values are the highest in a majority of the metrics assesed in the table.
+
+<span style="color:blue">**I now will genrate plots of actual values and in tandem plot the forecasted values all on the same graph. DOing so just gives us a visual aid to our calculaed numbers**</span>
+```{r}
+#Plotting all the forecasts in one graph for better visual reference and relative comparison.
+autoplot(b) +
+  autolayer(fcast1, series="TSLM", PI=FALSE) +
+  autolayer(fcast2, series="ETS", PI=FALSE) +
+  autolayer(fcast3, series="STL", PI=FALSE) +
+  autolayer(fcast4, series="ARIMA", PI=FALSE) +
+  autolayer (fcast5, series="RWD", PI=FALSE) +
+  xlab("Years") + ylab("$ in Millions") + 
+  ggtitle("Forecasting into the Testing Period")  
+```
+
+When we visually see the different plots of the forecasts, it’s evident that the most accurate methods are TSLM and STL methods. The TSLM mehtod is in line wiht the sporadic increase and decrease of the data presented by Booeing. Boeing over the years has has steepp drop that is related to its technical mallfunctions over flights. Furthermore, it also confirms my statement on how the ARIMA and other respective models performed inaccuratly in capturung the steep drop in numbers.
+
+<span style="color:blue">**Let’s produce the actual forecast values for each method. This step acts as a guided source of reference as we havent used PI's in the above graph**</span>
+
+<span style="color:green">**TSLM**</span>
+```{r}
+forecast(fcast1)
+```
+
+<span style="color:green">**ETS**</span>
+```{r}
+forecast(fcast2)
+```
+
+<span style="color:green">**STL**</span>
+```{r}
+forecast(fcast3)
+```
+
+<span style="color:green">**ARIMA**</span>
+```{r}
+forecast(fcast4)
+```
+
+<span style="color:green">**RWD**</span>
+```{r}
+forecast(fcast5)
+```
+
+<span style="color:blue">**As a final step, I wanted to check the residuals for each of the forecasting methods.**</span>
+
+<span style="color:green">**TSLM**</span>
+```{r}
+checkresiduals(fcast1)
+```
+
+<span style="color:green">**ETS**</span>
+```{r}
+checkresiduals(fcast2)
+```
+
+<span style="color:green">**STL**</span>
+```{r}
+checkresiduals(fcast3)
+```
+
+<span style="color:green">**ARIMA**</span>
+```{r}
+checkresiduals(fcast4)
+```
+
+<span style="color:green">**RWD**</span>
+```{r}
+checkresiduals(fcast5)
+```
+
+<font size="4"> **Overall analysis and conclusion**</font> 
+Through he residual analysis, the TSLM and STL methods still produce really good results in terms of i) Having the histogram that is the closest in terms of a normal distribution. The TSLM mehtod, additionally produces an ACF plot wiht a storng trend, with a decreasing trend factor.
+
+I would have thought that the Random walk with drift would fit the model better because of its suitabilty for data sets that have i) Long periods fo upward or downward trends, and ii) sudden and unpredicatble changes.
+
+**Question 2**
+
+<span style="color:blue">**Loading required file of Dominos for training and testing**</span>
+```{r}
+d_sales <- read.csv("~/desktop/r/as1_data-1.csv")
+View(d_sales)
+
+#Converting the following dataset to a dataframe and furthermore converting to a timeseries
+dof = d_sales
+dof = ts(dof, start=2002, frequency=4)
+d = dof[,"DPZ"]
+```
+
+<span style="color:blue">**Setting parameters for training and testing of the above mentoned data**</span>
+```{r}
+train1 <- window(d, start=c(2002,1), end=c(2013,4))
+test1 <- window(d, start=c(2014,1), end=c(2019,3))
+h=length(test1)
+```
+
+<span style="color:blue">**Applying each model to the traininig set for Dominos sales (training set)**</span>
+
+<span style="color:green">**TSLM**</span>
+```{r}
+fit.tslm1 <- tslm(train1 ~ trend + season)
+fcast1 <- forecast(fit.tslm1, h=h)
+```
+
+<span style="color:green">**ETS**</span>
+```{r}
+fit.ets1 <- ets(train1, model="ZZZ")
+fcast2 <- forecast(fit.ets1, h=h)
+```
+
+<span style="color:green">**STL**</span>
+```{r}
+fit.stl1 <- stl(train1, t.window=15, s.window="periodic", robust=TRUE)
+fcast3 <- forecast(fit.stl1, method="rwdrift", h=h)
+```
+
+<span style="color:green">**ARIMA**</span>
+```{r}
+fit.arima1 <- auto.arima(train1)
+fcast4 <- forecast(fit.arima1, h=h)
+```
+
+<span style="color:green">**Random walk with drift**</span>
+```{r}
+fcast5 <- rwf(train1, h=h, drift=TRUE)
+```
+
+
+```{r}
+a1 = accuracy(fcast1, test1)
+a2 = accuracy(fcast2, test1)
+a3 = accuracy(fcast3, test1)
+a4 = accuracy(fcast4, test1)
+a5 = accuracy(fcast5, test1)
+
+a.table<-rbind(a1, a2, a3, a4, a5)
+
+row.names(a.table)<-c('TSLM training', 'TSLM test', 'ETS training', 'ETS test','STL training', 'STL test', 'ARIMA training', 'ARIMA test', 'RWD training', 'RWD test')
+
+a.table<-as.data.frame(a.table)
+a.table<-a.table[order(a.table$MASE),]
+a.table
+```
+Looking at the test data and the accuracy tests for the same, the Random walk wiht drift method provided the ebst resuts, as it had the lowest value for the following metrics - MAPE,RMSE,MAE,and ME. In compariosn, the TSLM's accuracy was tabulated to be the worst, as it had high values realtive to the other methods.
+
+<span style="color:blue">**Let’s check and prodcue a residual anlysis for each method. This step acts as a guided source of reference as we did above in Question 1**</span>
+
+<span style="color:green">**TSLM**</span>
+```{r}
+checkresiduals(fcast1)
+```
+
+span style="color:green">**ETS**</span>
+```{r}
+checkresiduals(fcast2)
+```
+
+span style="color:green">**STL**</span>
+```{r}
+checkresiduals(fcast3)
+```
+
+span style="color:green">**ARIMA**</span>
+```{r}
+checkresiduals(fcast4)
+```
+
+span style="color:green">**RWD**</span>
+```{r}
+checkresiduals(fcast5)
+```
+
+```{r}
+p1 = autoplot(d) + autolayer(test1) + autolayer(fcast1, series="TSLM", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales-TSLM") + guides(colour=guide_legend(title="Legend"))
+
+p2 = autoplot(d) + autolayer(test1) + autolayer(fcast2, series="ETS", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales-ETS") + guides(colour=guide_legend(title="Legend"))
+
+p3 = autoplot(d) + autolayer(test1) + autolayer(fcast3, series="STL", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales-ARIMA") + guides(colour=guide_legend(title="Legend"))
+
+p4 = autoplot(d) + autolayer(test1) + autolayer(fcast4, series="Arima", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales-STL") + guides(colour=guide_legend(title="Legend"))
+
+p5 = autoplot(d) + autolayer(test1) + autolayer(fcast5, series="RWD", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales-RWD") + guides(colour=guide_legend(title="Legend"))
+
+gridExtra::grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+
+```
+
+<span style="color:blue">**Let’s produce the actual forecast values for each method. This step acts as a guided source of reference as we havent used PI's in the above graph**</span>
+
+
+<span style="color:green">**TSLM Forecasts**</span>
+```{r}
+forecast(fcast1)
+```
+
+<span style="color:green">**ETS Forecasts**</span>
+```{r}
+forecast(fcast2)
+```
+
+<span style="color:green">**ARIMA Forecasts**</span>
+```{r}
+forecast(fcast3)
+```
+
+<span style="color:green">**STL Forecasts**</span>
+```{r}
+forecast(fcast4)
+```
+
+<span style="color:green">**Random walk with drift Forecasts**</span>
+```{r}
+forecast(fcast5)
+```
+
+The histogram genrated by the RWD residual anlysis derived the most accurate shape to a normal distrbutuon whihc is always perefdered.The ARIMA method has great normal distrbution too. The rwd method's ACF plot has a low trend, but high seasonity factor.In tandem. it also has great variation in the residual plot.
+
+To conclude, we shoudl move forward wiht the Random walk with drift method.
+
+
+<span style="color:blue">**Forecasting Domino's sales from 2019 Q4**</span>
+```{r}
+train_r <- window(d, start=c(2002,1), end=c(2019,3))
+h=5
+rwf_t <- rwf(train_r, h=5, drift=TRUE)
+```
+
+```{r}
+forecast(rwf_t)
+```
+
+```{r}
+  autoplot(rwf_t, series="RWD", PI=FALSE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales from 2019 Q4-RWD") + guides(colour=guide_legend(title="Legend"))
+```
+
+```{r}
+autoplot(rwf_t, series="RWD", PI=TRUE) + xlab("Year") + ylab("Sales($million)") + ggtitle("Forecasts for Dominos pizza sales from 2019 Q4-RWD") + guides(colour=guide_legend(title="Legend"))
+```
+
+<font size="3"> **Overall analysis and conclusion**</font> 
+The RWD method genrates a forecast that indicates growth for Domino's slaes in the year to come (2020,4). The prjected sales indicates a growth to over 1354.26 ($million) by Q4 of 2020, this is considering the 95% prediciton interval. Overall this is a psotove sign for Dominos. We can better this model by adding more factors of sale for pizzas.
+
+**Question 3**
+
+<span style="color:blue">**Using Domino's dataset to construct time series cross validation for each of TSLM, ETS, ARIMA, RW with drift. The forecast horizon is 6 periods with window length of 50 observations.**</span>
+
+```{r}
+#Establishing  code for functions that will allow us to retrieve forecast objects from the TSLM, ETS, ARIMA, and RWD methods respectively
+
+frtslm <- function(x, h) {
+  forecast(tslm(x ~ trend + season), h = h)
+}
+
+frets <- function(x, h) {
+  forecast(ets(x), h = h)
+}
+
+
+frarima <- function(x, h) {
+  forecast(auto.arima(x), h=h)
+}
+
+frrwd <- function(x, h) {
+  forecast(rwf(x, drift=TRUE), h=h)
+}
+```
+
+```{r}
+#Computing the CV errors for TSLM as er1, ETS as er2, ARIMA as er3, and RWD as er4
+er1 <- tsCV(d, frtslm, h=6, window=50)
+
+er2 <- tsCV(d, frets, h=6, window=50)
+
+er3 <- tsCV(d, frarima, h=6, window=50)
+
+er4 <- tsCV(d, frrwd, h=6, window=50)
+```
+
+<span style="color:blue">** Calculating the MSE values for each model in each of the 6 periods.**</span>
+<span style="color:green">** Calculating the MSE values for TSLM.**</span>
+```{r}
+mse.tslm = c(1,2,3,4,5,6)
+for (m in c(1,2,3,4,5,6)){
+  mse.tslm[m] = mean(er1[,]^2, na.rm=TRUE)
+  print(mse.tslm[m])
+}
+```
+
+<span style="color:green">** Calculating the MSE values for ETS.**</span>
+```{r}
+mse.ets = c(1,2,3,4,5,6)
+for (j in c(1,2,3,4,5,6)){
+  mse.ets[j] = mean(er2[,j]^2, na.rm=TRUE)
+  print(mse.ets[j])
+}
+```
+
+<span style="color:green">** Calculating the MSE values for ARIMA.**</span>
+```{r}
+mse.arima = c(1,2,3,4,5,6)
+for (j in c(1,2,3,4,5,6)){
+  mse.arima[j] = mean(er3[,j]^2, na.rm=TRUE)
+  print(mse.arima[j])
+}
+```
+
+<span style="color:green">** Calculating the MSE values for RWD.**</span>
+```{r}
+mse.rwd = c(1,2,3,4,5,6)
+for (j in c(1,2,3,4,5,6)){
+  mse.rwd[j] = mean(er4[,j]^2, na.rm=TRUE)
+  print(mse.rwd[j])}
+```
+
+It is evident from the above table that ETS and ARIMA have the lowest mean standard error relative to the other observations.MSE value for ETS is lowest from H=1 to H=2, and the The MSE value for ARIMA is lowest from H=3 to H=6 If we look at the  total error, ARIMA has a lower MSE value for the forecasting period compared to ETS.
+
+<span style="color:blue">** I am now prodcuing a plot of MSE against the respective forecast periods for each forecast model we studied above.**</span>
+<span style="color:green">** Plot the MSE values for TSLM.**</span>
+```{r}
+mse.tslm.plot <- colMeans(er1^2, na.rm = TRUE)
+data.frame(h = 1:6, MSE = mse.tslm.plot) %>%
+  ggplot(aes(x = h, y = MSE)) + geom_point() + ggtitle("MSE Values (TSLM Method)")
+```
+
+<span style="color:green">** Plot the MSE values for ETS.**</span>
+```{r}
+mse.ets.plot <- colMeans(er2^2, na.rm = T)
+data.frame(h = 1:6, MSE = mse.ets.plot) %>%
+  ggplot(aes(x = h, y = MSE)) + geom_point() + ggtitle("MSE Values (ETS Method)")
+```
+
+<span style="color:green">** Plot the MSE values for ARIMA.**</span>
+```{r}
+mse.arima.plot <- colMeans(er3^2, na.rm = T)
+data.frame(h = 1:6, MSE = mse.arima.plot) %>%
+  ggplot(aes(x = h, y = MSE)) + geom_point() + ggtitle("MSE Values (ARIMA Method)")
+```
+
+<span style="color:green">** Plot the MSE values for RWD.**</span>
+```{r}
+mse.rwd.plot <- colMeans(er4^2, na.rm = T)
+data.frame(h = 1:6, MSE = mse.rwd.plot) %>%
+  ggplot(aes(x = h, y = MSE)) + geom_point() + ggtitle("MSE Values (RWD Method)")
+```
+
+<font size="4">**Overall analysis and conclusion**</font> 
+
+All the plots above we can observe that as the forecast perods do end up increaisng (wiht the gradual increase in h), the value of MSE increaes too. This is becaue it beciase hard to forecast acuurately wiht the increase in time, as facotrs are dynmaic in nature and are ever changing. Hence, we have to update data in a peridic manner to attain accurate observations, that resmble the actual environment. The above plots validate that ARIMA mehtod is the best, as 1) The MSE ends at the 8000 mark, relative to the ETS mehtod whihc ends at the 16000 2) The delta of change is greater for the ETS method relative to ARIMA.
