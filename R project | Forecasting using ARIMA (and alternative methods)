@@ -20,6 +20,7 @@ library(grid)
 ```
 
 <span style="color:blue">**Loading required file (Boeing sales) for training and testing**</span>
+
 ```{r}
 bo_rev <- read.csv("~/desktop/r/Boeingdata.csv")
 View(bo_rev)
@@ -31,6 +32,7 @@ b = df[,"SALES_REV_TURN"]
 ```
 
 <span style="color:blue">**Training and testing data based on goven parameters of 80-20 split**</span>
+
 ```{r}
 train <- window(b, start=c(2000,1), end=c(2015,4))
 test <- window(b, start=c(2016,1), end=c(2019,3))
@@ -38,7 +40,6 @@ h=length(test)
 ```
 
 **Question 1**
-
 <span style="color:blue">**Applying each model to the traininig set**</span>
 We are doing the following steps to compare the forecast accuracy for each of the respective methods.
 
@@ -88,11 +89,6 @@ a.table<-a.table[order(a.table$MASE),]
 a.table
 ```
 
-<font size="4"> **Overall analysis for Q1**</font> 
-
-Based on the table of accuracy measures presented above; using the test set it is evident that the TSLM method is able to genrate the best values. This is made sure as TSLM values are the lowest in the MAPE,ME,and MPE respetively.
-The next best results are genrated by the STL test using the same methods. However, relative to all of thes mehtids after close analysis, I was to confirm that the ARIMA test has the worst fitting model. The values are the highest in a majority of the metrics assesed in the table.
-
 <span style="color:blue">**I now will genrate plots of actual values and in tandem plot the forecasted values all on the same graph. DOing so just gives us a visual aid to our calculaed numbers**</span>
 ```{r}
 #Plotting all the forecasts in one graph for better visual reference and relative comparison.
@@ -105,8 +101,6 @@ autoplot(b) +
   xlab("Years") + ylab("$ in Millions") + 
   ggtitle("Forecasting into the Testing Period")  
 ```
-
-When we visually see the different plots of the forecasts, it’s evident that the most accurate methods are TSLM and STL methods. The TSLM mehtod is in line wiht the sporadic increase and decrease of the data presented by Booeing. Boeing over the years has has steepp drop that is related to its technical mallfunctions over flights. Furthermore, it also confirms my statement on how the ARIMA and other respective models performed inaccuratly in capturung the steep drop in numbers.
 
 <span style="color:blue">**Let’s produce the actual forecast values for each method. This step acts as a guided source of reference as we havent used PI's in the above graph**</span>
 
